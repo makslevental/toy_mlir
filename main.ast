@@ -1,0 +1,36 @@
+  Module:
+    Function 
+      Proto 'multiply_transpose' @../main.toy:2:1
+      Params: [a, b]
+      Block {
+        Return
+          BinOp: * @../main.toy:3:25
+            Call 'transpose' [ @../main.toy:3:10
+              var: a @../main.toy:3:20
+            ]
+            Call 'transpose' [ @../main.toy:3:25
+              var: b @../main.toy:3:35
+            ]
+      } // Block
+    Function 
+      Proto 'main' @../main.toy:6:1
+      Params: []
+      Block {
+        VarDecl a<2, 3> @../main.toy:7:3
+          Literal: <2, 3>[ <3>[ 1.000000e+00, 2.000000e+00, 3.000000e+00], <3>[ 4.000000e+00, 5.000000e+00, 6.000000e+00]] @../main.toy:7:17
+        VarDecl b<2, 3> @../main.toy:8:3
+          Literal: <6>[ 1.000000e+00, 2.000000e+00, 3.000000e+00, 4.000000e+00, 5.000000e+00, 6.000000e+00] @../main.toy:8:17
+        VarDecl c<> @../main.toy:9:3
+          Call 'multiply_transpose' [ @../main.toy:9:11
+            var: a @../main.toy:9:30
+            var: b @../main.toy:9:33
+          ]
+        VarDecl d<> @../main.toy:10:3
+          Call 'multiply_transpose' [ @../main.toy:10:11
+            var: b @../main.toy:10:30
+            var: a @../main.toy:10:33
+          ]
+        Print [ @../main.toy:11:3
+          var: d @../main.toy:11:9
+        ]
+      } // Block
