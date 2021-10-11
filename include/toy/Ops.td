@@ -13,7 +13,6 @@
 #ifndef TOY_OPS
 #define TOY_OPS
 
-include "mlir/IR/OpBase.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 
 // Provide a definition of the 'toy' dialect in the ODS framework so that we
@@ -45,11 +44,11 @@ def ConstantOp : Toy_Op<"constant", [NoSideEffect]> {
   let summary = "constant";
   let description = [{
     Constant operation turns a literal into an SSA value. The data is attached
-    to the operation as an attribute. For example:
+        to the operation as an attribute. For example:
 
     ```mlir
-      %0 = toy.constant dense<[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]>
-                        : tensor<2x3xf64>
+        %0 = toy.constant dense<[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]>
+                                             : tensor<2x3xf64>
     ```
   }];
 
@@ -61,6 +60,7 @@ def ConstantOp : Toy_Op<"constant", [NoSideEffect]> {
 
   // Specify a parser and printer method.
   let parser = [{ return ::parseConstantOp(parser, result); }];
+  let printer = [{ return ::print(p, *this); }];
 
   // Add custom build methods for the constant operation. These method populates
   // the `state` that MLIR uses to create operations, i.e. these are used when
@@ -68,8 +68,8 @@ def ConstantOp : Toy_Op<"constant", [NoSideEffect]> {
   let builders = [
     // Build a constant with a given constant tensor value.
     OpBuilder<(ins "DenseElementsAttr":$value), [{
-      build($_builder, $_state, value.getType(), value);
-    }]>,
+                build($_builder, $_state, value.getType(), value);
+              }]>,
 
     // Build a constant with a given constant floating-point value.
     OpBuilder<(ins "double":$value)>
@@ -79,11 +79,11 @@ def ConstantOp : Toy_Op<"constant", [NoSideEffect]> {
   let verifier = [{ return ::verify(*this); }];
 }
 
-def AddOp : Toy_Op<"add"> {
+def AddOp : Toy_Op<"add", [NoSideEffect]> {
   let summary = "element-wise addition operation";
   let description = [{
-    The "add" operation performs element-wise addition between two tensors.
-    The shapes of the tensor operands are expected to match.
+      The "add" operation performs element-wise addition between two tensors.
+                                             The shapes of the tensor operands are expected to match.
   }];
 
   let arguments = (ins F64Tensor:$lhs, F64Tensor:$rhs);
@@ -91,6 +91,7 @@ def AddOp : Toy_Op<"add"> {
 
   // Specify a parser and printer method.
   let parser = [{ return ::parseBinaryOp(parser, result); }];
+  let printer = [{ return ::printBinaryOp(p, *this); }];
 
   // Allow building an AddOp with from the two input operands.
   let builders = [
@@ -122,17 +123,22 @@ def GenericCallOp : Toy_Op<"generic_call"> {
   // The generic call operation returns a single value of TensorType.
   let results = (outs F64Tensor);
 
+  // Specialize assembly printing and parsing using a declarative format.
+  let assemblyFormat = [{
+    $callee `(` $inputs `)` attr-dict `:` functional-type($inputs, results)
+  }];
+
   // Add custom build methods for the generic call operation.
   let builders = [
     OpBuilder<(ins "StringRef":$callee, "ArrayRef<Value>":$arguments)>
   ];
 }
 
-def MulOp : Toy_Op<"mul"> {
+def MulOp : Toy_Op<"mul", [NoSideEffect]> {
   let summary = "element-wise multiplication operation";
   let description = [{
-    The "mul" operation performs element-wise multiplication between two
-    tensors. The shapes of the tensor operands are expected to match.
+      The "mul" operation performs element-wise multiplication between two
+                                                 tensors. The shapes of the tensor operands are expected to match.
   }];
 
   let arguments = (ins F64Tensor:$lhs, F64Tensor:$rhs);
@@ -140,6 +146,7 @@ def MulOp : Toy_Op<"mul"> {
 
   // Specify a parser and printer method.
   let parser = [{ return ::parseBinaryOp(parser, result); }];
+  let printer = [{ return ::printBinaryOp(p, *this); }];
 
   // Allow building a MulOp with from the two input operands.
   let builders = [
@@ -150,22 +157,24 @@ def MulOp : Toy_Op<"mul"> {
 def PrintOp : Toy_Op<"print"> {
   let summary = "print operation";
   let description = [{
-    The "print" builtin operation prints a given input tensor, and produces
-    no results.
+      The "print" builtin operation prints a given input tensor, and produces
+                                                                     no results.
   }];
 
   // The print operation takes an input tensor to print.
   let arguments = (ins F64Tensor:$input);
+
+  let assemblyFormat = "$input attr-dict `:` type($input)";
 }
 
-def ReshapeOp : Toy_Op<"reshape"> {
+def ReshapeOp : Toy_Op<"reshape", [NoSideEffect]> {
   let summary = "tensor reshape operation";
   let description = [{
     Reshape operation is transforming its input tensor into a new tensor with
-    the same number of elements but different shapes. For example:
+        the same number of elements but different shapes. For example:
 
     ```mlir
-       %0 = toy.reshape (%arg1 : tensor<10xf64>) to tensor<5x2xf64>
+        %0 = toy.reshape (%arg1 : tensor<10xf64>) to tensor<5x2xf64>
     ```
   }];
 
@@ -173,28 +182,38 @@ def ReshapeOp : Toy_Op<"reshape"> {
 
   // We expect that the reshape operation returns a statically shaped tensor.
   let results = (outs StaticShapeTensorOf<[F64]>);
+
+  let assemblyFormat = [{
+    `(` $input `:` type($input) `)` attr-dict `to` type(results)
+  }];
+
+  // Enable registering canonicalization patterns with this operation.
+  let hasCanonicalizer = 1;
 }
 
 def ReturnOp : Toy_Op<"return", [NoSideEffect, HasParent<"FuncOp">,
-                                 Terminator]> {
+                                  Terminator]> {
   let summary = "return operation";
   let description = [{
     The "return" operation represents a return operation within a function.
-    The operation takes an optional tensor operand and produces no results.
-    The operand type must match the signature of the function that contains
-    the operation. For example:
+        The operation takes an optional tensor operand and produces no results.
+        The operand type must match the signature of the function that contains
+            the operation. For example:
 
     ```mlir
-      func @foo() -> tensor<2xf64> {
-        ...
-        toy.return %0 : tensor<2xf64>
-      }
+                func @foo() -> tensor<2xf64> {
+      ...
+          toy.return %0 : tensor<2xf64>
+    }
     ```
   }];
 
   // The return operation takes an optional input operand to return. This
   // value must match the return type of the enclosing function.
   let arguments = (ins Variadic<F64Tensor>:$input);
+
+  // The return operation only emits the input in the format if it is present.
+  let assemblyFormat = "($input^ `:` type($input))? attr-dict ";
 
   // Allow building a ReturnOp with no return operand.
   let builders = [
@@ -204,17 +223,24 @@ def ReturnOp : Toy_Op<"return", [NoSideEffect, HasParent<"FuncOp">,
   // Provide extra utility definitions on the c++ operation class definition.
   let extraClassDeclaration = [{
     bool hasOperand() { return getNumOperands() != 0; }
-  }];
+}];
 
-  // Invoke a static verify method to verify this return operation.
-  let verifier = [{ return ::verify(*this); }];
+// Invoke a static verify method to verify this return operation.
+let verifier = [{ return ::verify(*this); }];
 }
 
-def TransposeOp : Toy_Op<"transpose"> {
+def TransposeOp : Toy_Op<"transpose", [NoSideEffect]> {
   let summary = "transpose operation";
 
   let arguments = (ins F64Tensor:$input);
   let results = (outs F64Tensor);
+
+  let assemblyFormat = [{
+    `(` $input `:` type($input) `)` attr-dict `to` type(results)
+  }];
+
+  // Enable registering canonicalization patterns with this operation.
+  let hasCanonicalizer = 1;
 
   // Allow building a TransposeOp with from the input operand.
   let builders = [

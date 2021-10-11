@@ -23,6 +23,7 @@ include(AddMLIR)
 
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${MLIR_INCLUDE_DIRS})
+message("${PROJECT_BINARY_DIR}")
 include_directories(${PROJECT_SOURCE_DIR}/include)
 # fatal error: 'toy/Dialect.h.inc' file not found
 include_directories(${PROJECT_BINARY_DIR}/include)
@@ -35,8 +36,13 @@ include_directories(${PROJECT_BINARY_DIR}/include)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
 
 add_subdirectory(include/toy)
-add_executable(toy src/toy.cpp src/AST.cpp src/Dialect.cpp src/MLIRGen.cpp)
-add_dependencies(toy ToyCh2OpsIncGen)
+add_executable(toy
+        src/toy.cpp
+        src/AST.cpp
+        src/Dialect.cpp
+        src/MLIRGen.cpp
+        src/Combine.cpp)
+add_dependencies(toy ToyCh2OpsIncGen ToyCh3CombineIncGen)
 
 llvm_map_components_to_libnames(llvm_libs Support)
 target_link_libraries(toy
