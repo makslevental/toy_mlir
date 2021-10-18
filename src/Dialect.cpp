@@ -156,7 +156,7 @@ void ConstantOp::build(mlir::OpBuilder &builder, mlir::OperationState &state,
   ConstantOp::build(builder, state, dataType, dataAttribute);
 }
 
-/// The 'OpAsmParser' class provides a collection of methods for parsing
+/// The 'OpAsmPrinter' class provides a collection of methods for parsing
 /// various punctuation, as well as attributes, operands, types, etc. Each of
 /// these methods returns a `ParseResult`. This class is a wrapper around
 /// `LogicalResult` that can be converted to a boolean `true` value on failure,
@@ -198,7 +198,7 @@ static mlir::LogicalResult verify(ConstantOp op) {
     return op.emitOpError(
                "return type must match the one of the attached value "
                "attribute: ")
-           << attrType.getRank() << " != " << resultType.getRank();
+        << attrType.getRank() << " != " << resultType.getRank();
   }
 
   // Check that each of the dimensions match between the two types.
@@ -206,8 +206,8 @@ static mlir::LogicalResult verify(ConstantOp op) {
     if (attrType.getShape()[dim] != resultType.getShape()[dim]) {
       return op.emitOpError(
                  "return type shape mismatches its attribute at dimension ")
-             << dim << ": " << attrType.getShape()[dim]
-             << " != " << resultType.getShape()[dim];
+          << dim << ": " << attrType.getShape()[dim]
+          << " != " << resultType.getShape()[dim];
     }
   }
   return mlir::success();
@@ -221,6 +221,17 @@ void AddOp::build(mlir::OpBuilder &builder, mlir::OperationState &state,
   state.addTypes(UnrankedTensorType::get(builder.getF64Type()));
   state.addOperands({lhs, rhs});
 }
+
+/// Infer the output shape of the AddOp, this is required by the shape inference
+/// interface.
+void AddOp::inferShapes() { getResult().setType(getOperand(0).getType()); }
+
+//===----------------------------------------------------------------------===//
+// CastOp
+
+/// Infer the output shape of the CastOp, this is required by the shape
+/// inference interface.
+void CastOp::inferShapes() { getResult().setType(getOperand().getType()); }
 
 /// Returns true if the given set of input and result types are compatible with
 /// this cast operation. This is required by the `CastOpInterface` to verify
@@ -268,6 +279,10 @@ void MulOp::build(mlir::OpBuilder &builder, mlir::OperationState &state,
   state.addOperands({lhs, rhs});
 }
 
+/// Infer the output shape of the MulOp, this is required by the shape inference
+/// interface.
+void MulOp::inferShapes() { getResult().setType(getOperand(0).getType()); }
+
 //===----------------------------------------------------------------------===//
 // ReturnOp
 
@@ -312,6 +327,12 @@ void TransposeOp::build(mlir::OpBuilder &builder, mlir::OperationState &state,
                         mlir::Value value) {
   state.addTypes(UnrankedTensorType::get(builder.getF64Type()));
   state.addOperands(value);
+}
+
+void TransposeOp::inferShapes() {
+  auto arrayTy = getOperand().getType().cast<RankedTensorType>();
+  SmallVector<int64_t, 2> dims(llvm::reverse(arrayTy.getShape()));
+  getResult().setType(RankedTensorType::get(dims, arrayTy.getElementType()));
 }
 
 static mlir::LogicalResult verify(TransposeOp op) {

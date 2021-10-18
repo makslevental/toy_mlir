@@ -41,8 +41,10 @@ add_executable(toy
         src/AST.cpp
         src/Dialect.cpp
         src/MLIRGen.cpp
-        src/Combine.cpp)
-add_dependencies(toy ToyCh2OpsIncGen ToyCh3CombineIncGen)
+        src/Combine.cpp
+        src/ShapeInferencePass.cpp
+        )
+add_dependencies(toy ToyCh2OpsIncGen ToyCh3CombineIncGen ToyCh4ShapeInferenceInterfaceIncGen)
 
 llvm_map_components_to_libnames(llvm_libs Support)
 target_link_libraries(toy

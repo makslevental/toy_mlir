@@ -16,6 +16,7 @@
 include "mlir/Interfaces/CallInterfaces.td"
 include "mlir/Interfaces/CastInterfaces.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
+include "toy/ShapeInferenceInterface.td"
 
 // Provide a definition of the 'toy' dialect in the ODS framework so that we
 // can define our operations.
@@ -81,7 +82,8 @@ def ConstantOp : Toy_Op<"constant", [NoSideEffect]> {
   let verifier = [{ return ::verify(*this); }];
 }
 
-def AddOp : Toy_Op<"add", [NoSideEffect]> {
+def AddOp : Toy_Op<"add",
+                   [NoSideEffect, DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
   let summary = "element-wise addition operation";
   let description = [{
       The "add" operation performs element-wise addition between two tensors.
@@ -103,6 +105,7 @@ def AddOp : Toy_Op<"add", [NoSideEffect]> {
 
 def CastOp : Toy_Op<"cast", [
   DeclareOpInterfaceMethods<CastOpInterface>,
+  DeclareOpInterfaceMethods<ShapeInferenceOpInterface>,
   NoSideEffect,
   SameOperandsAndResultShape
 ]> {
@@ -157,7 +160,8 @@ def GenericCallOp : Toy_Op<"generic_call",
   ];
 }
 
-def MulOp : Toy_Op<"mul", [NoSideEffect]> {
+def MulOp : Toy_Op<"mul",
+                   [NoSideEffect, DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
   let summary = "element-wise multiplication operation";
   let description = [{
       The "mul" operation performs element-wise multiplication between two
@@ -252,7 +256,8 @@ def ReturnOp : Toy_Op<"return", [NoSideEffect, HasParent<"FuncOp">,
 let verifier = [{ return ::verify(*this); }];
 }
 
-def TransposeOp : Toy_Op<"transpose", [NoSideEffect]> {
+def TransposeOp : Toy_Op<"transpose",
+                         [NoSideEffect, DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
   let summary = "transpose operation";
 
   let arguments = (ins F64Tensor:$input);
