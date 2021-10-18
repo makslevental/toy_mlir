@@ -14,7 +14,6 @@
 #include "mlir/IR/Matchers.h"
 #include "mlir/IR/PatternMatch.h"
 #include "toy/Dialect.h"
-#include <numeric>
 using namespace mlir;
 using namespace toy;
 

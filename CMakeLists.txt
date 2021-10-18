@@ -48,6 +48,8 @@ llvm_map_components_to_libnames(llvm_libs Support)
 target_link_libraries(toy
         ${llvm_libs}
         MLIRAnalysis
+        MLIRCastInterfaces
+        MLIRCallInterfaces
         MLIRIR
         MLIRParser
         MLIRSideEffectInterfaces
